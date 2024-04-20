@@ -4,7 +4,7 @@
 
 <style>
     body { font-family: sans-serif; }
-    canvas { display: block; margin: auto; width: 512px; height: 512px; border: 10px solid #000; }
+    canvas { display: block; margin: auto; width: 1024px; height: 1024px; border: 10px solid #000; }
     #fail { color: red; white-space: pre-wrap; max-width: 600px; }
 </style>
 
@@ -27,17 +27,17 @@ const vec2 world_offset = vec2(-4,-4);
 
 float len2( vec2 a )
 {
-    return a[0] * a[0] + a[1] * a[1];
+    return a.x * a.x + a.y * a.y;
 }
 
 vec2 mul_complex( vec2 a, vec2 b )
 {
-    return vec2( a[0] * b[0] - a[1] * b[1], a[1] * b[0] + a[0] * b[1] );
+    return vec2( a.x * b.x - a.y * b.y, a.y * b.x + a.x * b.y );
 }
 
 vec2 div_complex( vec2 a, vec2 b )
 {
-    return vec2( ( a[0] * b[0] + a[1] * b[1] ) / len2( b ), ( a[1] * b[0] - a[0] * b[1] ) / len2( b ) );
+    return vec2( ( a.x * b.x + a.y * b.y ) / len2( b ), ( a.y * b.x - a.x * b.y ) / len2( b ) );
 }
 
 vec2 mobius_on_point( vec2 a, vec2 b, vec2 c, vec2 d, vec2 z )
@@ -118,7 +118,7 @@ void main() {
 
 <body>
 <script>
-var W = 512, H = 512;
+var W = 1024, H = 1024;
 
 function init() {
     if (window.parent && window.parent != window) {
