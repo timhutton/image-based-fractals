@@ -1,6 +1,6 @@
 Live WebGL demo: http://timhutton.github.io/image-based-fractals
 
-Work in progress.
+Work in progress. [Discussion thread here.](https://mathstodon.xyz/@timhutton/112300033160877559)
 
 Currently it doesn't work at all. In theory it should end up looking like the below. However the implementation is currently the most naive possible: sample a single pixel.
 
