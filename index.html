@@ -72,15 +72,21 @@ void main() {
     m[14] = vec2(-0.7038718775368936,-0.03336761357578018);
     m[15] = vec2(0.9547285139975278,-1.0266878540580662);
 
-    vec2 uv = gl_FragCoord.xy / u_size; // map pixel coords to [0,1]
+    // map pixel coords to [0,1]
+    vec2 uv = gl_FragCoord.xy / u_size;
     // map [0,1] to world space
     vec2 p = uv * world_size + world_offset;
 
     // find the source points for this pixel
-    vec2 uv0 = ( mobius_on_point(m[0], m[1], m[2], m[3], p) - world_offset ) / world_size;
-    vec2 uv1 = ( mobius_on_point(m[4], m[5], m[6], m[7], p) - world_offset ) / world_size;
-    vec2 uv2 = ( mobius_on_point(m[8], m[9], m[10], m[11], p) - world_offset ) / world_size;
-    vec2 uv3 = ( mobius_on_point(m[12], m[13], m[14], m[15], p) - world_offset ) / world_size;
+    vec2 p0 = mobius_on_point(m[0], m[1], m[2], m[3], p);
+    vec2 p1 = mobius_on_point(m[4], m[5], m[6], m[7], p);
+    vec2 p2 = mobius_on_point(m[8], m[9], m[10], m[11], p);
+    vec2 p3 = mobius_on_point(m[12], m[13], m[14], m[15], p);
+    // map world space to [0,1]
+    vec2 uv0 = ( p0 - world_offset ) / world_size;
+    vec2 uv1 = ( p1 - world_offset ) / world_size;
+    vec2 uv2 = ( p2 - world_offset ) / world_size;
+    vec2 uv3 = ( p3 - world_offset ) / world_size;
 
     // sample the texture at those points, or black if off-screen
     vec4 col0, col1, col2, col3;
