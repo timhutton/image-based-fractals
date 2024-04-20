@@ -75,11 +75,11 @@ void main() {
     // subsample the pixel NxN
     const int N = 3;
     vec4 col = vec4(0,0,0,1);
-    for(int i=0;i<=N;i++)
+    for(int i=0;i<N;i++)
     {
-        for(int j=0;j<=N;j++)
+        for(int j=0;j<N;j++)
         {
-            vec2 pixel_xy = gl_FragCoord.xy - vec2(0.5,0.5) + vec2(i,j) / float(N);
+            vec2 pixel_xy = gl_FragCoord.xy - vec2(0.5, 0.5) + vec2(i,j) / float(N-1);
             // map pixel coords to [0,1]
             vec2 uv = pixel_xy / u_size;
             // map [0,1] to world space
@@ -103,7 +103,7 @@ void main() {
     }
 
     // assign the mean of all of those samples back to our pixel
-    gl_FragColor = vec4( col.xyz / (4.0 * float((N+1) * (N+1))), 1);
+    gl_FragColor = vec4( col.xyz / float( 4 * N * N ), 1);
 }
 </script>
 
