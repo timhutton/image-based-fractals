@@ -4,7 +4,7 @@
 
 <style>
     body { font-family: sans-serif; }
-    canvas { display: block; margin: auto; width: 1024px; height: 512px; border: 10px solid #000; }
+    canvas { display: block; margin: auto; width: 512px; height: 512px; border: 10px solid #000; }
     #fail { color: red; white-space: pre-wrap; max-width: 600px; }
 </style>
 
@@ -21,15 +21,9 @@ precision mediump float;
 uniform sampler2D u_image;
 uniform vec2 u_size;
 
-const float
-    A0 = -0.01,
-    A1 = 2.0,
-    EPSILON = 0.1,
-    DELTA = 7.0;
-
-const float TIMESTEP = 0.03,
-    SCALE = 1.0;
-
+// The world space coordinates of our image are (-4,-4) to (4,4)
+const vec2 world_size = vec2(8,8);
+const vec2 world_offset = vec2(-4,-4);
 
 float len2( vec2 a )
 {
@@ -78,32 +72,29 @@ void main() {
     m[14] = vec2(-0.7038718775368936,-0.03336761357578018);
     m[15] = vec2(0.9547285139975278,-1.0266878540580662);
 
-    vec2 pt = mobius_on_point(m[0], m[1], m[2], m[3], vec2(0,0));
+    vec2 uv = gl_FragCoord.xy / u_size; // map pixel coords to [0,1]
+    // map [0,1] to world space
+    vec2 p = uv * world_size + world_offset;
 
-    // TODO: rip out RD code below, implement image-based fractals
+    // find the source points for this pixel
+    vec2 uv0 = ( mobius_on_point(m[0], m[1], m[2], m[3], p) - world_offset ) / world_size;
+    vec2 uv1 = ( mobius_on_point(m[4], m[5], m[6], m[7], p) - world_offset ) / world_size;
+    vec2 uv2 = ( mobius_on_point(m[8], m[9], m[10], m[11], p) - world_offset ) / world_size;
+    vec2 uv3 = ( mobius_on_point(m[12], m[13], m[14], m[15], p) - world_offset ) / world_size;
 
-    // The fractal is bounded by re:[-2,2] and im:[-4,4]
+    // sample the texture at those points, or black if off-screen
+    vec4 col0, col1, col2, col3;
+    if(uv0.x < 0.0 || uv0.x > 1.0 || uv0.y < 0.0 || uv0.y > 1.0) col0 = vec4(0,0,0,1);
+    else col0 = texture2D(u_image, uv0);
+    if(uv1.x < 0.0 || uv1.x > 1.0 || uv1.y < 0.0 || uv1.y > 1.0) col1 = vec4(0,0,0,1);
+    else col1 = texture2D(u_image, uv1);
+    if(uv2.x < 0.0 || uv2.x > 1.0 || uv2.y < 0.0 || uv2.y > 1.0) col2 = vec4(0,0,0,1);
+    else col2 = texture2D(u_image, uv2);
+    if(uv3.x < 0.0 || uv3.x > 1.0 || uv3.y < 0.0 || uv3.y > 1.0) col3 = vec4(0,0,0,1);
+    else col3 = texture2D(u_image, uv3);
 
-    vec2 p = gl_FragCoord.xy,
-         n = p + vec2(0.0, 1.0),
-         e = p + vec2(1.0, 0.0),
-         s = p + vec2(0.0, -1.0),
-         w = p + vec2(-1.0, 0.0);
-
-    vec2 val = texture2D(u_image, p / u_size).xy;
-
-    vec2 laplacian =
-          texture2D(u_image, n / u_size).xy
-        + texture2D(u_image, s / u_size).xy
-        + texture2D(u_image, e / u_size).xy
-        + texture2D(u_image, w / u_size).xy
-        - 4.0 * val;
-
-    vec2 delta = vec2(
-        val.x - val.x*val.x*val.x - val.y + laplacian.x * SCALE,
-        EPSILON*(val.x - A1*val.y - A0) + DELTA*laplacian.y * SCALE);
-
-    gl_FragColor = vec4(val + delta * TIMESTEP, 0, 0);
+    // assign the mean of those colors back to our pixel
+    gl_FragColor = vec4((col0.xyz + col1.xyz + col2.xyz + col3.xyz) / 4.0, 1);
 }
 </script>
 
@@ -112,18 +103,14 @@ precision mediump float;
 uniform sampler2D u_image;
 uniform vec2 u_size;
 
-const float COLOR_MIN = -0.10, COLOR_MAX = -0.05;
-
 void main() {
-    float c = texture2D(u_image, gl_FragCoord.xy / u_size).y,
-          v = max(0.0, min(1.0, (c - COLOR_MIN) / (COLOR_MAX - COLOR_MIN)));
-    gl_FragColor = vec4(v, v, v, 1);
+    gl_FragColor = texture2D(u_image, gl_FragCoord.xy / u_size);
 }
 </script>
 
 <body>
 <script>
-var W = 512, H = 256;
+var W = 512, H = 512;
 
 function init() {
     if (window.parent && window.parent != window) {
@@ -174,7 +161,7 @@ function init() {
 
     function step() {
         gl.useProgram(timestep_prog);
-        for (var i=0; i<80; i++) {
+        for (var i=0; i<20; i++) {
             gl.bindTexture(gl.TEXTURE_2D, [t1, t2][i % 2]);
             gl.bindFramebuffer(gl.FRAMEBUFFER, [fb2, fb1][i % 2]);
             gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
@@ -199,18 +186,11 @@ function getInitialState() {
 
     for (var y=0; y<H; y++) {
         for (var x=0; x<W; x++) {
-            var i = W*y + x,
-                rx = (x - W/2),
-                ry = (y - H/2),
-                dd = Math.sqrt(rx*rx + ry*ry),
-                in_stripe = dd > 50 && dd < 55 && ry < 20;
-
-            if (in_stripe) {
-                a[4*i + 0] = 0.99;
-            } else {
-                a[4*i + 0] = -0.7;
-            }
-            a[4*i + 1] = -0.3;
+            var i = W*y + x;
+            a[4*i + 0] = 1;
+            a[4*i + 1] = 1;
+            a[4*i + 2] = 1;
+            a[4*i + 3] = 1;
         }
     }
 
