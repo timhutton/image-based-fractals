@@ -54,51 +54,51 @@ vec2 mobius_on_point( vec2 a, vec2 b, vec2 c, vec2 d, vec2 z )
 void main() {
     // Parameters from Grandma's four alarm special from Indra's Pearls, p. 260. With ta = 1.870000 + 0.080000i, tb = 1.870000 - 0.100000i, tab = 1.790000 - 1.948000i
     // https://timhutton.github.io/mobius-transforms/dfs_recipes.html?id=special&ta.x=1.870000&ta.y=0.080000&tb.x=1.870000&tb.y=-0.100000&tab.x=1.790000&tab.y=-1.948000
-    vec2 m[16];  // Four Mobius transforms, each is four complex numbers
-    m[0] = vec2(0.935,0.04);
-    m[1] = vec2(-0.05842334444968401,-0.07144275973942649);
-    m[2] = vec2(0.2462918414410266,-1.5814871559334707);
-    m[3] = vec2(0.935,0.04);
-    m[4] = vec2(0.9547285139975278,-1.0266878540580662);
-    m[5] = vec2(1.1661281224631066,-0.13336761357578011);
-    m[6] = vec2(0.7038718775368936,0.03336761357578018);
-    m[7] = vec2(0.9152714860024723,0.9266878540580662);
-    m[8] = vec2(0.935,0.04);
-    m[9] = vec2(0.05842334444968401,0.07144275973942649);
-    m[10] = vec2(-0.2462918414410266,1.5814871559334707);
-    m[11] = vec2(0.935,0.04);
-    m[12] = vec2(0.9152714860024723,0.9266878540580662);
-    m[13] = vec2(-1.1661281224631066,0.13336761357578011);
-    m[14] = vec2(-0.7038718775368936,-0.03336761357578018);
-    m[15] = vec2(0.9547285139975278,-1.0266878540580662);
+    vec2 m0[4],m1[4],m2[4],m3[4];  // Four Mobius transforms, each is four complex numbers
+    m0[0] = vec2(0.935,0.04);
+    m0[1] = vec2(-0.05842334444968401,-0.07144275973942649);
+    m0[2] = vec2(0.2462918414410266,-1.5814871559334707);
+    m0[3] = vec2(0.935,0.04);
+    m1[0] = vec2(0.9547285139975278,-1.0266878540580662);
+    m1[1] = vec2(1.1661281224631066,-0.13336761357578011);
+    m1[2] = vec2(0.7038718775368936,0.03336761357578018);
+    m1[3] = vec2(0.9152714860024723,0.9266878540580662);
+    m2[0] = vec2(0.935,0.04);
+    m2[1] = vec2(0.05842334444968401,0.07144275973942649);
+    m2[2] = vec2(-0.2462918414410266,1.5814871559334707);
+    m2[3] = vec2(0.935,0.04);
+    m3[0] = vec2(0.9152714860024723,0.9266878540580662);
+    m3[1] = vec2(-1.1661281224631066,0.13336761357578011);
+    m3[2] = vec2(-0.7038718775368936,-0.03336761357578018);
+    m3[3] = vec2(0.9547285139975278,-1.0266878540580662);
 
-    // subsample the pixel NxN
     const int N = 3;
     vec4 col = vec4(0,0,0,1);
-    for(int i=0;i<N;i++)
+    for(int im=0;im<4;im++)
     {
-        for(int j=0;j<N;j++)
+        vec2 a,b,c,d;
+        if(im==0) { a=m0[0]; b=m0[1]; c=m0[2]; d=m0[3]; }
+        else if(im==1) { a=m1[0]; b=m1[1]; c=m1[2]; d=m1[3]; }
+        else if(im==2) { a=m2[0]; b=m2[1]; c=m2[2]; d=m2[3]; }
+        else { a=m3[0]; b=m3[1]; c=m3[2]; d=m3[3]; }
+
+        // subsample the pixel NxN
+        for(int i=0;i<N;i++)
         {
-            vec2 pixel_xy = gl_FragCoord.xy - vec2(0.5, 0.5) + vec2(i,j) / float(N-1);
-            // map pixel coords to [0,1]
-            vec2 uv = pixel_xy / u_size;
-            // map [0,1] to world space
-            vec2 p = uv * world_size + world_offset;
-            // find the source points for this pixel
-            vec2 p0 = mobius_on_point(m[0], m[1], m[2], m[3], p);
-            vec2 p1 = mobius_on_point(m[4], m[5], m[6], m[7], p);
-            vec2 p2 = mobius_on_point(m[8], m[9], m[10], m[11], p);
-            vec2 p3 = mobius_on_point(m[12], m[13], m[14], m[15], p);
-            // map world space to [0,1]
-            vec2 uv0 = ( p0 - world_offset ) / world_size;
-            vec2 uv1 = ( p1 - world_offset ) / world_size;
-            vec2 uv2 = ( p2 - world_offset ) / world_size;
-            vec2 uv3 = ( p3 - world_offset ) / world_size;
-            // sample the texture at those points, if on-screen
-            if(uv0.x >= 0.0 && uv0.x <= 1.0 && uv0.y >= 0.0 && uv0.y <= 1.0) col += texture2D(u_image, uv0);
-            if(uv1.x >= 0.0 && uv1.x <= 1.0 && uv1.y >= 0.0 && uv1.y <= 1.0) col += texture2D(u_image, uv1);
-            if(uv2.x >= 0.0 && uv2.x <= 1.0 && uv2.y >= 0.0 && uv2.y <= 1.0) col += texture2D(u_image, uv2);
-            if(uv3.x >= 0.0 && uv3.x <= 1.0 && uv3.y >= 0.0 && uv3.y <= 1.0) col += texture2D(u_image, uv3);
+            for(int j=0;j<N;j++)
+            {
+                vec2 pixel_xy = gl_FragCoord.xy - vec2(0.5, 0.5) + vec2(i,j) / float(N-1);
+                // map pixel coords to [0,1]
+                vec2 uv = pixel_xy / u_size;
+                // map [0,1] to world space
+                vec2 p = uv * world_size + world_offset;
+                // find the source points for this pixel
+                vec2 p0 = mobius_on_point(a, b, c, d, p);
+                // map world space to [0,1]
+                vec2 uv0 = ( p0 - world_offset ) / world_size;
+                // sample the texture at those points, if on-screen
+                if(uv0.x >= 0.0 && uv0.x <= 1.0 && uv0.y >= 0.0 && uv0.y <= 1.0) col += texture2D(u_image, uv0);
+            }
         }
     }
 
